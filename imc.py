@@ -4,11 +4,27 @@ import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 
 
-img1 = cv2.imread( "0000000060.png" , 0);
-img2 = cv2.imread( "0000000075.png" , 0);
-img3 = cv2.imread( "0000000090.png" , 0)
+imgd1 = cv2.imread( "left-0000.png" , 0);
+img2 = cv2.imread( "left-0002.png" , 0);
+img3 = cv2.imread( "left-0002.png" , 0)
   
- 
+plt.imshow(imgd1)
+
+K = np.matrix([[546.024414,0.000000,319.711258],
+              [0.000000,542.211182,251.374926],
+              [0.000000,0.000000,1.000000]])  
+
+
+dc= np.matrix([0.262383,-0.953104,-0.005358,0.002628,1.163314])
+
+h,  w = imgd1.shape[:2]
+K2, roi=cv2.getOptimalNewCameraMatrix(K,dc,(w,h),1,(w,h))
+
+
+img1 = cv2.undistort(imgd1, K, dc, None, K2)
+plt.imshow(img1) 
+
+
 sift = cv2.xfeatures2d.SIFT_create()
 kp1,des1 =sift.detectAndCompute(img1,None)
 kp2,des2 =sift.detectAndCompute(img2,None)
@@ -149,15 +165,17 @@ lines2 = cv2.computeCorrespondEpilines(pts1.reshape(-1,1,2), 1,F)
 lines2 = lines2.reshape(-1,3)
 img3,img4 = drawlines(img2,img1,lines2,pts2,pts1)
 
-stereo = cv2.StereoBM_create(numDisparities=16, blockSize=15)
-disparity = stereo.compute(img1,img2)
-plt.imshow(disparity,'gray')
-plt.show()
+# stereo = cv2.StereoBM_create(numDisparities=16, blockSize=15)
+# disparity = stereo.compute(img1,img2)
+# plt.imshow(disparity,'gray')
+# plt.show()
 ###############.............1st................##############################
 P1 = np.eye(3,4)
-K = np.matrix([[9.011007e+02,0.000000e+00,6.982947e+02],
-              [0.000000e+00,8.970639e+02,2.377447e+02],
-              [0.000000e+00,0.000000e+00,1.000000e+00]])
+#K = np.matrix([[9.011007e+02,0.000000e+00,6.982947e+02],
+#             [0.000000e+00,8.970639e+02,2.377447e+02],
+#             [0.000000e+00,0.000000e+00,1.000000e+00]])
+
+
 
 
 E= np.dot(np.dot(np.transpose(K),F),K)
@@ -189,6 +207,9 @@ X[3]=1.0
 x1=np.dot(P1,X)
 x2=np.dot(P2,X)
 
+
+
+
 ###############.....................1st....................############################
 
 E2 = np.dot(np.dot(np.transpose(K),F2),K)
@@ -218,12 +239,13 @@ X2=cv2.triangulatePoints(P2[:3],P3[:3],pt2f[:2],pt3f[:2])
 X2[3]=1.0
 
 s= ((((X1[0,0]-X1[0,10])**2)+((X1[1,0]-X1[1,10])**2)+((X1[2,0]-X1[2,10])**2))**0.5)/(((X2[0,0]-X2[0,10])**2)+((X2[1,0]-X2[1,10])**2)+((X2[2,0]-X2[2,10])**2))**0.5
-print s
+#s=1
 
 P3[:,3]*=s
 Xf=cv2.triangulatePoints(P2[:3],P3[:3],pt2f[:2],pt3f[:2])
 xf=np.dot(P3,Xf)
-print np.transpose(Xf)[:,0:3]
+print Xf
+#print np.transpose(Xf)[:,0:3]
 # rvec=np.zeros((3,3),dtype=np.float32)
 # tvec=np.zeros((3,1),dtype=np.float32)
 _ret, rvec, tvec = cv2.solvePnP(np.transpose(Xf)[:,0:3], np.transpose(pt3f)[:,0:2], K, None)
@@ -231,7 +253,9 @@ _ret, rvec, tvec = cv2.solvePnP(np.transpose(Xf)[:,0:3], np.transpose(pt3f)[:,0:
 
 nrvec,jac=cv2.Rodrigues(rvec)
 
-print tvec
+print rvec
+
+
 
 j=0
 fig = plt.figure()
@@ -247,10 +271,43 @@ ax.set_ylabel('Y Label')
 ax.set_zlabel('Z Label')
 plt.show()
 
-stereo = cv2.StereoBM_create(numDisparities=16, blockSize=15)
-disparity = stereo.compute(pt1f,pt2f)
-plt.imshow(disparity,'gray')
+
+
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+for j in range(1):
+#Axes3D.plot(X[0,0],X[1,0],X[2,0])
+    ax.scatter(tvec[0,0], tvec[1,0], tvec[2,0], c='r', marker='o')
+    ax.scatter(0, 0, 0, c='b', marker='o')
+
+ax.set_xlabel('X Label')
+ax.set_ylabel('Y Label')
+ax.set_zlabel('Z Label')
 plt.show()
+
+MIN_MATCH_COUNT = 10
+
+if len(good)>MIN_MATCH_COUNT:
+    src_pts = np.float32([ kp1[m.queryIdx].pt for m in good ]).reshape(-1,1,2)
+    dst_pts = np.float32([ kp2[m.trainIdx].pt for m in good ]).reshape(-1,1,2)
+    M, mask1 = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC,5.0)
+    matchesMask = mask1.ravel().tolist()
+    h,w = img1.shape
+    pts = np.float32([ [0,0],[0,h-1],[w-1,h-1],[w-1,0] ]).reshape(-1,1,2)
+    dst = cv2.perspectiveTransform(pts,M)
+    img2 = cv2.polylines(img2,[np.int32(dst)],True,255,3, cv2.LINE_AA)
+else:
+    print( "Not enough matches are found - {}/{}".format(len(good), MIN_MATCH_COUNT) )
+    matchesMask = None
+
+draw_params = dict(matchColor = (0,255,0), # draw matches in green color
+                   singlePointColor = None,
+                   matchesMask = matchesMask, # draw only inliers
+                   flags = 2)
+img4 = cv2.drawMatches(img1,kp1,img2,kp2,good,None,**draw_params)
+plt.imshow(img4, 'gray'),plt.show()
+
+
 
 # fig = plt.figure()
 # ax = fig.add_subplot(111, projection='3d')
