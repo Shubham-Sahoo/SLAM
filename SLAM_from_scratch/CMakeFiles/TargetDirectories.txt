@@ -1,0 +1,3 @@
+/home/shubham/Desktop/imc/build/CMakeFiles/edit_cache.dir
+/home/shubham/Desktop/imc/build/CMakeFiles/rebuild_cache.dir
+/home/shubham/Desktop/imc/build/CMakeFiles/image.dir
