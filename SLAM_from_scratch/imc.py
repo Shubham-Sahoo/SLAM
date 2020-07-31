@@ -2,9 +2,10 @@ import cv2
 from matplotlib import pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
+import glob
+#import natsort
 
-
-trans = np.empty((3,77),dtype=np.float64)
+trans = np.empty((3,51),dtype=np.float64)
 # K = np.matrix([[546.02441,0.000000,319.711258],
 #               [0.000000,542.211182,251.374926],
 #               [0.000000,0.000000,1.000000]])  
@@ -24,12 +25,53 @@ K = np.matrix([[9.842439e+02,0.000000e+00,6.900000e+02],
 
 # img1 = cv2.undistort(imgd1, K, dc, None, K2)
 # plt.imshow(img1) 
+#filenames = [img for img in sorted(glob.glob("images_3/*.png"))] 
+#natsort.natsorted(filenames,reverse=False)
+#filenames.sort()
+# images = []
+# for img in glob.glob("images_3/*.png"):
+#     n= cv2.imread(img)
+#     images.append(n)
+#     print (img)
+
+
+
 l=10
-while l<72:
+P1 = np.zeros((3,4),dtype=np.float64)
+P1[0,0]=1
+P1[1,1]=1
+P1[2,2]=1
+
+P2 = np.zeros((3,4),dtype=np.float64)
+P2[0,0]=1
+P2[1,1]=1
+P2[2,2]=1
+
+P3 = np.zeros((3,4),dtype=np.float64)
+P3[0,0]=1
+P3[1,1]=1
+P3[2,2]=1
+
+Tr1 = np.zeros((4,4),dtype=np.float64)
+Prev_Tr = np.zeros((4,4),dtype=np.float64)
+Prev_Tr[0,0]=1
+Prev_Tr[1,1]=1
+Prev_Tr[2,2]=1
+Prev_Tr[3,3]=1
+T1 = np.zeros((3,1),dtype=np.float64)
+
+Tr2 = np.zeros((4,4),dtype=np.float64)
+T2 = np.zeros((3,),dtype=np.float64)
+
+while l<15:
   
-  img1 = cv2.imread( "00000000"+str(l)+".png" , 0)
-  img2 = cv2.imread( "00000000"+str(l+2)+".png" , 0)
-  img3 = cv2.imread( "00000000"+str(l+4)+".png" , 0)
+  #img1 = images[l] #cv2.imread( "../images_2/00000000"+str(l)+".png" , 0)
+  #img2 = images[l+2] #cv2.imread( "../images_2/00000000"+str(l+2)+".png" , 0)
+  #img3 = images[l+4] #cv2.imread( "../images_2/00000000"+str(l+4)+".png" , 0)
+
+  img1 = cv2.imread( "images_3/00000000"+str(l)+".png" , 0)
+  img2 = cv2.imread( "images_3/00000000"+str(l+1)+".png" , 0)
+  img3 = cv2.imread( "images_3/00000000"+str(l+2)+".png" , 0)
 
   surf = cv2.xfeatures2d.SURF_create()
   kp1,des1 =surf.detectAndCompute(img1,None)
@@ -48,7 +90,7 @@ while l<72:
   pts2 = []
 
   for i,(m,n) in enumerate(matches):
-    if m.distance < 0.7*n.distance:
+    if m.distance < 0.8*n.distance:
       good.append(m)
       pts2.append(kp2[m.trainIdx].pt)
       pts1.append(kp1[m.queryIdx].pt)
@@ -73,7 +115,7 @@ while l<72:
   pts22 = []
 
   for i,(m,n) in enumerate(matches2):
-    if m.distance < 0.7*n.distance:
+    if m.distance < 0.8*n.distance:
       good2.append(m)
       pts22.append(kp3[m.trainIdx].pt)
       pts12.append(kp2[m.queryIdx].pt)
@@ -99,7 +141,7 @@ while l<72:
   pts23 = []
 
   for i,(m,n) in enumerate(matches3):
-    if m.distance < 0.7*n.distance:
+    if m.distance < 0.8*n.distance:
       good3.append(m)
       pts23.append(kp3[m.trainIdx].pt)
       pts13.append(kp1[m.queryIdx].pt)
@@ -175,7 +217,7 @@ while l<72:
   # plt.imshow(disparity,'gray')
   # plt.show()
   ###############.............1st................##############################
-  P1 = np.eye(3,4)
+
   #K = np.matrix([[9.011007e+02,0.000000e+00,6.982947e+02],
   #             [0.000000e+00,8.970639e+02,2.377447e+02],
   #             [0.000000e+00,0.000000e+00,1.000000e+00]])
@@ -191,17 +233,40 @@ while l<72:
   W = np.matrix([[0,-1,0],[1,0,0],[0,0,1]])
 
   R1 = np.dot(np.dot(u,np.linalg.inv(W)),vt);
-
   T1 = u[:,2]
-  np.squeeze(np.asarray(T1))
+  #np.squeeze(np.asarray(T1))
 
-  P2 = np.matrix([[R1[0,0],R1[0,1],R1[0,2],T1[0,0]],
-                  [R1[1,0],R1[1,1],R1[1,2],T1[1,0]],
-                  [R1[2,0],R1[2,1],R1[2,2],T1[2,0]]])
+  Tr1[0,0] = R1[0,0]
+  Tr1[0,1] = R1[0,1]
+  Tr1[0,2] = R1[0,2]  
+  Tr1[1,0] = R1[1,0]
+  Tr1[1,1] = R1[1,1]
+  Tr1[1,2] = R1[1,2]
+  Tr1[2,0] = R1[2,0] 
+  Tr1[2,1] = R1[2,1]
+  Tr1[2,2] = R1[2,2]
+  Tr1[0,3] = T1[0,0]
+  Tr1[1,3] = T1[1,0]
+  Tr1[2,3] = T1[2,0]
+  Tr1[3,3] = 1
+
+  Tr1 = np.dot(Prev_Tr,Tr1)
+  loc_R1 = Tr1[0:3,0:3]
+  temp_T1 = Tr1[0:3,3]
+  #print loc_R1.shape
+  loc_T1=np.reshape(np.ravel(temp_T1,'F'),(3,-1))
+  #print loc_T1.shape
+  P2[0:3,0:3] = np.transpose(loc_R1)
+  P2[0:3,[3]] = -np.dot(np.transpose(loc_R1),loc_T1)
+
+  P2 = np.dot(K,P2)
+  #P2 = np.matrix([[Tr1[0,0],Tr1[0,1],Tr1[0,2],Tr1[0,3]],
+  #                [Tr1[1,0],Tr1[1,1],Tr1[1,2],Tr1[1,3]],
+  #               [Tr1[2,0],Tr1[2,1],Tr1[2,2],Tr1[2,3]]])
 
 
 
-
+  
   pt1=np.reshape(np.ravel(pts1,'F'),(2,-1))
 
 
@@ -209,7 +274,8 @@ while l<72:
 
   X=cv2.triangulatePoints(P1[:3],P2[:3],pt1[:2],pt2[:2])
   #print X.shape
-
+  #P1 = P2;
+  Prev_Tr = Tr1
   X[3]=1.0
   x1=np.dot(P1,X)
   x2=np.dot(P2,X)
@@ -224,10 +290,33 @@ while l<72:
   u2, s2, vt2 = np.linalg.svd(E2,full_matrices=True)
   R2=np.dot(np.dot(u2,np.linalg.inv(W)),vt2)
   T2=u[:,2]
-  np.squeeze(np.asarray(T2))
-  P3 = np.matrix([[R2[0,0],R2[0,1],R2[0,2],T2[0,0]],
-                  [R2[1,0],R2[1,1],R2[1,2],T2[1,0]],
-                  [R2[2,0],R2[2,1],R2[2,2],T2[2,0]]])
+
+  #np.squeeze(np.asarray(T2))
+  Tr2[0,0] = R2[0,0]
+  Tr2[0,1] = R2[0,1]
+  Tr2[0,2] = R2[0,2]  
+  Tr2[1,0] = R2[1,0]
+  Tr2[1,1] = R2[1,1]
+  Tr2[1,2] = R2[1,2]
+  Tr2[2,0] = R2[2,0] 
+  Tr2[2,1] = R2[2,1]
+  Tr2[2,2] = R2[2,2]
+  Tr2[0,3] = T2[0,0]
+  Tr2[1,3] = T2[1,0]
+  Tr2[2,3] = T2[2,0]
+  Tr2[3,3] = 1
+
+  Tr2 = np.dot(Tr1,Tr2)
+  loc_R2 = Tr2[0:3,0:3]
+  temp_T2 = Tr2[0:3,3]
+  loc_T2=np.reshape(np.ravel(temp_T2,'F'),(3,-1))
+  P3[0:3,0:3] = np.transpose(loc_R2)
+  P3[0:3,[3]] = -np.dot(np.transpose(loc_R2),loc_T2)
+
+  P3 = np.dot(K,P3)
+  #P3 = np.matrix([[R2[0,0],R2[0,1],R2[0,2],T2[0,0]],
+  #                [R2[1,0],R2[1,1],R2[1,2],T2[1,0]],
+  #                [R2[2,0],R2[2,1],R2[2,2],T2[2,0]]])
 
   pt12=np.reshape(np.ravel(pts1,'F'),(2,-1))
 
@@ -241,20 +330,22 @@ while l<72:
   pt3f=np.reshape(np.ravel(pts3f,'F'),(2,-1))
 
   X1=cv2.triangulatePoints(P1[:3],P2[:3],pt1f[:2],pt2f[:2])
-  X1[3]=1.0
+  X1=X1/X1[3]
   X2=cv2.triangulatePoints(P2[:3],P3[:3],pt2f[:2],pt3f[:2])
-  X2[3]=1.0
+  X2=X2/X2[3]
 
   #Xtest=cv2.triangulatePoints(P1[:3],P2[:3],testp1[:2],testp2[:2])
   #Xtest[3]=1.0
 
-  s= ((((X1[0,0]-X1[0,10])**2)+((X1[1,0]-X1[1,10])**2)+((X1[2,0]-X1[2,10])**2))**0.5)/(((X2[0,0]-X2[0,10])**2)+((X2[1,0]-X2[1,10])**2)+((X2[2,0]-X2[2,10])**2))**0.5
+  s= (((((X1[0,0]-X1[0,10])**2)+((X1[1,0]-X1[1,10])**2)+((X1[2,0]-X1[2,10])**2))**0.5)/(((X2[0,0]-X2[0,10])**2)+((X2[1,0]-X2[1,10])**2)+((X2[2,0]-X2[2,10])**2))**0.5 + 
+     ((((X1[0,5]-X1[0,15])**2)+((X1[1,5]-X1[1,15])**2)+((X1[2,5]-X1[2,15])**2))**0.5)/(((X2[0,5]-X2[0,15])**2)+((X2[1,5]-X2[1,15])**2)+((X2[2,5]-X2[2,15])**2))**0.5)/2.0
   #s=1
-
-  P3[:,3]*=s
+  print "s: ", s	
+  P3[:,3]*= s
   Xf=cv2.triangulatePoints(P2[:3],P3[:3],pt2f[:2],pt3f[:2])
+  Xf=Xf/Xf[3]
   xf=np.dot(P3,Xf)
-
+  
   #print np.transpose(Xf)[:,0:3]
   # rvec=np.zeros((3,3),dtype=np.float32)
   # tvec=np.zeros((3,1),dtype=np.float32)
@@ -263,12 +354,15 @@ while l<72:
 
   nrvec,jac=cv2.Rodrigues(rvec)
 
-  #print tvec[1][0] 
+  print "loc: " , loc_T1
+  print "tvec: " , tvec
   print l
-  print P2
-  trans[0][l]=tvec[0][0]
-  trans[1][l]=tvec[1][0]
-  trans[2][l]=tvec[2][0]
+  #trans[0][l]=tvec[0][0]
+  #trans[1][l]=tvec[1][0]
+  #trans[2][l]=tvec[2][0]
+  trans[0][l]=tvec[0]
+  trans[1][l]=tvec[1]
+  trans[2][l]=tvec[2]
   l=l+1
       
 
